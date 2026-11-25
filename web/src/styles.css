@@ -309,7 +309,7 @@ code.inline {
   font-family: var(--font-mono);
   font-size: 9.5px;
   letter-spacing: 0.14em;
-  text-transform: uppercase;
+  text-transform: none;
   color: var(--muted);
 }
 
