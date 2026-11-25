@@ -8,6 +8,7 @@ services:
       - "8080:8080"
     environment:
       BASE_URL: ${BASE_URL:-http://localhost:8080}
+      ADMIN_PATH: ${ADMIN_PATH:-}
       ADMIN_TOKEN: ${ADMIN_TOKEN:-}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       CACHE_SECONDS: ${CACHE_SECONDS:-600}
