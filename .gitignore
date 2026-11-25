@@ -1,0 +1,14 @@
+data/
+node_modules/
+web/dist/
+web/node_modules/
+.env
+*.db
+*.db-wal
+*.db-shm
+/sourcebox
+/sourcebox.exe
+runtime.*.log
+.server.pid
+*~
+

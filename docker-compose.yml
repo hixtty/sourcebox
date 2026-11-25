@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    image: sourcebox:local
+    container_name: sourcebox
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      BASE_URL: ${BASE_URL:-http://localhost:8080}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      CACHE_SECONDS: ${CACHE_SECONDS:-600}
+    volumes:
+      - ./data:/data
+
