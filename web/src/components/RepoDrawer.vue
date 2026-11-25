@@ -72,7 +72,7 @@ async function save(): Promise<void> {
     detail.value = await api.repoDetail(props.repoId)
     await loadOverview(true)
     emit('changed')
-    pushToast('Repository updated.')
+    pushToast('仓库已更新。')
   } catch (error) {
     pushToast(errorMessage(error), 'error')
   } finally {
@@ -89,7 +89,7 @@ async function refresh(): Promise<void> {
     detail.value = await api.repoDetail(props.repoId)
     await loadOverview(true)
     emit('changed')
-    pushToast('Repository refreshed.')
+    pushToast('仓库已刷新。')
   } catch (error) {
     pushToast(errorMessage(error), 'error')
   }
@@ -109,7 +109,7 @@ async function remove(): Promise<void> {
     await loadOverview(true)
     emit('changed')
     emit('close')
-    pushToast('Repository removed from the source.')
+    pushToast('仓库已从源中移除。')
   } catch (error) {
     pushToast(errorMessage(error), 'error')
   } finally {
@@ -122,13 +122,13 @@ async function remove(): Promise<void> {
   <div v-if="repoId !== null" class="drawer-shell">
     <div class="drawer-backdrop" @click="emit('close')"></div>
 
-    <aside class="drawer" role="dialog" aria-modal="true" aria-label="Repository details">
+    <aside class="drawer" role="dialog" aria-modal="true" aria-label="仓库详情">
       <header class="drawer__head">
         <div>
-          <h2>{{ detail?.repo.displayName ?? 'Loading repository…' }}</h2>
+          <h2>{{ detail?.repo.displayName ?? '正在加载仓库…' }}</h2>
           <p v-if="detail" class="mono muted">{{ detail.repo.owner }}/{{ detail.repo.name }}</p>
         </div>
-        <button class="icon-btn" type="button" aria-label="Close details" @click="emit('close')">
+        <button class="icon-btn" type="button" aria-label="关闭详情" @click="emit('close')">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
           </svg>
@@ -148,12 +148,11 @@ async function remove(): Promise<void> {
             <span class="chip" :data-status="detail.repo.status">{{ detail.repo.statusLabel }}</span>
             <p class="drawer__rel">
               <span v-if="detail.release?.tag">Release {{ detail.release.tag }}</span>
-              <span v-else>No release detected</span>
+              <span v-else>未检测到 Release</span>
               <span v-if="detail.repo.latestSize"> · {{ formatBytes(detail.repo.latestSize) }}</span>
             </p>
             <p class="drawer__meta mono">
-              {{ detail.repo.appCount }} {{ detail.repo.appCount === 1 ? 'entry' : 'entries' }} ·
-              {{ detail.repo.stars }} stars
+              {{ detail.repo.appCount }} 个条目 · {{ detail.repo.stars }} 星
             </p>
           </div>
         </div>
@@ -161,11 +160,11 @@ async function remove(): Promise<void> {
         <div v-if="detail.error" class="alert" role="alert">
           <strong>{{ detail.repo.statusLabel }}</strong>
           <p>{{ detail.error }}</p>
-          <a :href="detail.repo.url" target="_blank" rel="noreferrer">Open on GitHub</a>
+          <a :href="detail.repo.url" target="_blank" rel="noreferrer">在 GitHub 上打开</a>
         </div>
 
         <section v-if="versions.length" class="drawer__section">
-          <h3>Versions</h3>
+          <h3>版本</h3>
           <ul class="versions">
             <li v-for="row in versions" :key="row.version.downloadURL" class="version">
               <div class="version__main">
@@ -176,56 +175,56 @@ async function remove(): Promise<void> {
                 </p>
               </div>
               <a class="btn btn--ghost btn--sm" :href="row.version.downloadURL" target="_blank" rel="noreferrer">
-                Download
+                下载
               </a>
             </li>
           </ul>
         </section>
 
         <section v-if="detail.release?.body" class="drawer__section">
-          <h3>Release notes</h3>
+          <h3>Release 说明</h3>
           <pre class="notes">{{ detail.release.body }}</pre>
         </section>
 
         <section class="drawer__section">
-          <h3>Appearance</h3>
+          <h3>外观</h3>
           <div class="form-grid">
             <label class="field">
-              <span>Display name</span>
+              <span>显示名称</span>
               <input v-model="form.displayName" class="input" type="text" />
             </label>
             <div class="form-row">
               <label class="field">
-                <span>Accent color</span>
+                <span>强调色</span>
                 <div class="color-field">
                   <input v-model="form.tintColor" class="input" type="text" />
                   <input
                     v-model="form.tintColor"
                     class="color-field__picker"
                     type="color"
-                    aria-label="Pick accent color"
+                    aria-label="选择强调色"
                   />
                 </div>
               </label>
               <label class="field">
-                <span>Icon override</span>
+                <span>图标覆盖</span>
                 <input v-model="form.iconUrl" class="input" type="text" placeholder="https://…" />
               </label>
             </div>
           </div>
           <div class="drawer__actions">
-            <button class="btn btn--ghost" type="button" @click="refresh">Refresh now</button>
+            <button class="btn btn--ghost" type="button" @click="refresh">立即刷新</button>
             <button class="btn btn--primary" type="button" :disabled="saving" @click="save">
-              {{ saving ? 'Saving…' : 'Save changes' }}
+              {{ saving ? '保存中…' : '保存修改' }}
             </button>
           </div>
         </section>
 
         <section class="drawer__section drawer__section--danger">
-          <h3>Remove</h3>
-          <p class="muted">Drops this repository's apps from the source. The GitHub repository is untouched.</p>
+          <h3>移除</h3>
+          <p class="muted">只把仓库里的应用从源里去掉，GitHub 上的仓库本身不受影响。</p>
           <button class="btn btn--danger" type="button" :disabled="removing" @click="remove">
-            {{ confirmDelete ? 'Confirm removal' : 'Remove from source' }}
+            {{ confirmDelete ? '确认移除' : '从源中移除' }}
           </button>
         </section>
       </template>

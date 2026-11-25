@@ -63,7 +63,7 @@ func BuildCache(ctx context.Context, baseURL string, repo store.Repo, api API) s
 	}
 	if release == nil {
 		cache.Status = StatusNoRelease
-		cache.Error = "No published release yet."
+		cache.Error = "还没有发布过 Release。"
 		return cache
 	}
 
@@ -84,7 +84,7 @@ func BuildCache(ctx context.Context, baseURL string, repo store.Repo, api API) s
 			label = "latest"
 		}
 		cache.Status = StatusNoIPA
-		cache.Error = "Latest release " + label + " has no .ipa asset."
+	cache.Error = "最新 Release " + label + " 里没有 .ipa 文件。"
 		return cache
 	}
 
@@ -105,7 +105,7 @@ func failed(cache store.Cache, err error) store.Cache {
 	}
 	cache.Kind = "internal"
 	log.Printf("refresh: unexpected error: %v", err)
-	cache.Error = "Unexpected error while reading this repository."
+	cache.Error = "读取这个仓库时出现意外错误。"
 	return cache
 }
 

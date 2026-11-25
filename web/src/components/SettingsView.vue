@@ -52,7 +52,7 @@ async function save(): Promise<void> {
       cacheSeconds: Number(form.cacheSeconds) || 0,
     })
     await loadOverview(true)
-    pushToast('Source settings saved.')
+    pushToast('源设置已保存。')
   } catch (error) {
     pushToast(errorMessage(error), 'error')
   } finally {
@@ -73,9 +73,9 @@ async function copy(): Promise<void> {
 <template>
   <div class="stack">
     <header class="page-head">
-      <span class="eyebrow">Workspace</span>
-      <h1>Settings</h1>
-      <p class="muted">How the source presents itself, and how often release data is refreshed.</p>
+      <span class="eyebrow">工作台</span>
+      <h1>设置</h1>
+      <p class="muted">源的展示信息，以及 Release 数据的刷新频率。</p>
     </header>
 
     <div v-if="!state.overview" class="stack">
@@ -87,43 +87,43 @@ async function copy(): Promise<void> {
       <div class="settings-grid">
         <section class="panel">
           <header class="panel__head">
-            <h2>Source identity</h2>
-            <p class="muted">Shown at the top of the source in SideStore and AltStore.</p>
+            <h2>源信息</h2>
+            <p class="muted">会在 SideStore 和 AltStore 的源顶部显示。</p>
           </header>
 
           <div class="form-grid">
             <label class="field">
-              <span>Source name</span>
+              <span>源名称</span>
               <input v-model="form.name" class="input" type="text" />
             </label>
 
             <label class="field">
-              <span>Source slug</span>
+              <span>源 slug</span>
               <input v-model="form.slug" class="input" type="text" />
               <small class="field__hint">
-                The file name after <span class="mono">/</span>. <span class="mono">source</span> keeps both
-                <span class="mono">/source.json</span> and <span class="mono">/{{ form.slug }}.json</span>.
+                文件名里 <span class="mono">/</span> 后面的部分。填 <span class="mono">source</span> 时
+                <span class="mono">/source.json</span> 与 <span class="mono">/{{ form.slug }}.json</span> 都可用。
               </small>
             </label>
 
             <div class="form-row">
               <label class="field">
-                <span>Accent color</span>
+                <span>强调色</span>
                 <div class="color-field">
                   <input v-model="form.tintColor" class="input" type="text" />
                   <input
                     v-model="form.tintColor"
                     class="color-field__picker"
                     type="color"
-                    aria-label="Pick accent color"
+                    aria-label="选择强调色"
                   />
                 </div>
               </label>
 
               <label class="field">
-                <span>Cache seconds</span>
+                <span>缓存秒数</span>
                 <input v-model.number="form.cacheSeconds" class="input" type="number" min="0" step="30" />
-                <small class="field__hint">How long a repository's release data stays cached.</small>
+                <small class="field__hint">仓库 Release 数据的缓存时长。</small>
               </label>
             </div>
           </div>
@@ -131,17 +131,17 @@ async function copy(): Promise<void> {
 
         <section class="panel">
           <header class="panel__head">
-            <h2>Description</h2>
-            <p class="muted">Plain text. Markdown is not rendered by the clients.</p>
+            <h2>描述</h2>
+            <p class="muted">纯文本，客户端不会渲染 Markdown。</p>
           </header>
 
           <div class="form-grid">
             <label class="field">
-              <span>Subtitle</span>
+              <span>副标题</span>
               <input v-model="form.subtitle" class="input" type="text" />
             </label>
             <label class="field">
-              <span>Description</span>
+              <span>描述</span>
               <textarea v-model="form.description" class="input textarea" rows="4"></textarea>
             </label>
           </div>
@@ -149,54 +149,54 @@ async function copy(): Promise<void> {
 
         <section class="panel">
           <header class="panel__head">
-            <h2>Endpoint</h2>
-            <p class="muted">This is what you paste into SideStore or AltStore.</p>
+            <h2>源地址</h2>
+            <p class="muted">填到 SideStore 或 AltStore 里的就是这一条。</p>
           </header>
 
           <div class="endpoint">
             <span class="mono endpoint__url">{{ sourceUrl }}</span>
             <button class="btn btn--ghost btn--sm" type="button" @click="copy">
-              {{ copied ? 'Copied' : 'Copy' }}
+              {{ copied ? '已复制' : '复制' }}
             </button>
           </div>
         </section>
 
         <section class="panel">
           <header class="panel__head">
-            <h2>Server environment</h2>
-            <p class="muted">These values come from the container environment.</p>
+            <h2>服务器环境</h2>
+            <p class="muted">这些值来自容器环境变量。</p>
           </header>
 
           <dl class="facts">
             <div class="fact">
-              <dt>Base URL</dt>
+              <dt>对外地址</dt>
               <dd class="mono">{{ state.overview.baseUrl }}</dd>
             </div>
             <div class="fact">
-              <dt>Dashboard path</dt>
+              <dt>后台路径</dt>
               <dd class="mono">{{ state.overview.adminPath }}</dd>
             </div>
             <div class="fact">
-              <dt>GitHub token</dt>
+              <dt>GitHub Token</dt>
               <dd>
                 <span class="chip" :data-status="state.overview.githubTokenConfigured ? 'ok' : 'pending'">
-                  {{ state.overview.githubTokenConfigured ? 'Configured' : 'Not set' }}
+                  {{ state.overview.githubTokenConfigured ? '已配置' : '未设置' }}
                 </span>
                 <small class="field__hint">
-                  Rate limit is 60 requests/hour without a token, 5000 with one. Set
-                  <span class="mono">GITHUB_TOKEN</span> and restart.
+                  不配置时每小时 60 次请求，配置后 5000 次。设置
+                  <span class="mono">GITHUB_TOKEN</span> 后重启容器生效。
                 </small>
               </dd>
             </div>
             <div class="fact">
-              <dt>Admin access</dt>
+              <dt>后台访问</dt>
               <dd>
                 <span class="chip" :data-status="state.overview.authRequired ? 'ok' : 'no_ipa'">
-                  {{ state.overview.authRequired ? 'Token required' : 'Open' }}
+                  {{ state.overview.authRequired ? '需要密码' : '无需登录' }}
                 </span>
                 <small class="field__hint">
-                  Set <span class="mono">ADMIN_TOKEN</span> to lock this dashboard. The source JSON stays
-                  public either way.
+                  设置 <span class="mono">ADMIN_TOKEN</span> 可以给这个后台加密码；无论是否设置，
+                  源 JSON 都是公开的。
                 </small>
               </dd>
             </div>
@@ -205,9 +205,9 @@ async function copy(): Promise<void> {
       </div>
 
       <div class="settings-actions">
-        <span class="muted">Changes apply on the next source request.</span>
+        <span class="muted">改动会在下一次请求源时生效。</span>
         <button class="btn btn--primary" type="button" :disabled="saving" @click="save">
-          {{ saving ? 'Saving…' : 'Save settings' }}
+          {{ saving ? '保存中…' : '保存设置' }}
         </button>
       </div>
     </template>

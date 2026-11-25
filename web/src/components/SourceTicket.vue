@@ -27,7 +27,7 @@ async function copy(): Promise<void> {
 <template>
   <section class="ticket" :style="{ '--tint': tint }">
     <div class="ticket__main">
-      <span class="eyebrow">Source endpoint</span>
+      <span class="eyebrow">源地址</span>
       <p class="ticket__url mono">{{ url }}</p>
       <div class="ticket__acts">
         <button class="btn btn--primary" type="button" @click="copy">
@@ -50,16 +50,16 @@ async function copy(): Promise<void> {
               stroke-width="1.7"
             />
           </svg>
-          {{ copied ? 'Copied' : 'Copy URL' }}
+          {{ copied ? '已复制' : '复制地址' }}
         </button>
-        <a class="btn btn--ghost" :href="url" target="_blank" rel="noreferrer">Open JSON</a>
-        <span class="ticket__meta">{{ apps }} apps · {{ repos }} repos · refreshed {{ timeAgo(lastRefresh) }}</span>
+        <a class="btn btn--ghost" :href="url" target="_blank" rel="noreferrer">查看 JSON</a>
+        <span class="ticket__meta">{{ apps }} 个应用 · {{ repos }} 个仓库 · {{ timeAgo(lastRefresh) }}更新</span>
       </div>
     </div>
 
     <div class="ticket__rail">
-      <img class="ticket__qr" :src="qr" width="128" height="128" alt="QR code for the source URL" />
-      <span class="ticket__scan">Scan in SideStore</span>
+      <img class="ticket__qr" :src="qr" width="128" height="128" alt="源地址二维码" />
+      <span class="ticket__scan">用 SideStore 扫码</span>
     </div>
   </section>
 </template>

@@ -15,24 +15,24 @@ export function formatBytes(bytes?: number | null): string {
 
 export function timeAgo(iso?: string | null): string {
   if (!iso) {
-    return 'never'
+    return '从未'
   }
   const stamp = new Date(iso).getTime()
   if (Number.isNaN(stamp)) {
-    return 'never'
+    return '从未'
   }
   const seconds = Math.max(0, Date.now() - stamp) / 1000
   if (seconds < 45) {
-    return 'just now'
+    return '刚刚'
   }
   if (seconds < 3600) {
-    return `${Math.round(seconds / 60)}m ago`
+    return `${Math.round(seconds / 60)} 分钟前`
   }
   if (seconds < 86400) {
-    return `${Math.round(seconds / 3600)}h ago`
+    return `${Math.round(seconds / 3600)} 小时前`
   }
   if (seconds < 60 * 86400) {
-    return `${Math.round(seconds / 86400)}d ago`
+    return `${Math.round(seconds / 86400)} 天前`
   }
   return new Date(iso).toLocaleDateString()
 }
@@ -77,6 +77,6 @@ export function errorMessage(error: unknown): string {
   if (error instanceof Error && error.message) {
     return error.message
   }
-  return 'Something went wrong. Try again.'
+  return '出了点问题，请重试。'
 }
 

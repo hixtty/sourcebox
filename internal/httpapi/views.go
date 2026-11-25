@@ -10,11 +10,11 @@ import (
 )
 
 var statusLabels = map[string]string{
-	refresh.StatusOK:        "Ready",
-	refresh.StatusNoRelease: "No release",
-	refresh.StatusNoIPA:     "No IPA",
-	refresh.StatusError:     "Error",
-	refresh.StatusPending:   "Pending",
+	refresh.StatusOK:        "就绪",
+	refresh.StatusNoRelease: "无 Release",
+	refresh.StatusNoIPA:     "无 IPA",
+	refresh.StatusError:     "错误",
+	refresh.StatusPending:   "等待中",
 }
 
 var problemStatuses = map[string]bool{
@@ -114,8 +114,8 @@ func sourceFromDB(cfg config.Config, kv map[string]string) sourceView {
 	return sourceView{
 		Name:         value("source_name", "SourceBox"),
 		Slug:         slug,
-		Subtitle:     value("source_subtitle", "Self-hosted AltStore source"),
-		Description:  value("source_description", "AltStore and SideStore source generated from GitHub release .ipa assets."),
+		Subtitle:     value("source_subtitle", "自托管的 AltStore 源"),
+		Description:  value("source_description", "由 GitHub Release 的 .ipa 文件生成的 AltStore / SideStore 源。"),
 		TintColor:    value("source_tint", config.DefaultTint),
 		CacheSeconds: cacheSeconds,
 		URL:          cfg.BaseURL + "/" + slug + ".json",

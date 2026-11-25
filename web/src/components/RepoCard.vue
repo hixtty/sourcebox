@@ -10,7 +10,7 @@ const emit = defineEmits<{ open: [id: number]; refresh: [id: number] }>()
 <template>
   <article class="card" :style="{ '--tint': repo.tintColor }">
     <div class="card__top">
-      <img class="card__icon" :src="repo.iconSrc" :alt="`${repo.displayName} icon`" loading="lazy" />
+      <img class="card__icon" :src="repo.iconSrc" :alt="`${repo.displayName} 图标`" loading="lazy" />
       <div class="card__id">
         <h3 class="card__name">{{ repo.displayName }}</h3>
         <p class="card__handle">{{ repo.owner }}/{{ repo.name }}</p>
@@ -19,7 +19,7 @@ const emit = defineEmits<{ open: [id: number]; refresh: [id: number] }>()
     </div>
 
     <p class="card__desc">
-      {{ repo.description || 'This repository has no description on GitHub.' }}
+      {{ repo.description || '这个仓库在 GitHub 上没有简介。' }}
     </p>
 
     <div class="card__foot">
@@ -30,8 +30,8 @@ const emit = defineEmits<{ open: [id: number]; refresh: [id: number] }>()
         <button
           class="icon-btn icon-btn--sm"
           type="button"
-          :aria-label="`Refresh ${repo.displayName}`"
-          title="Refresh"
+          :aria-label="`刷新 ${repo.displayName}`"
+          title="刷新"
           @click="emit('refresh', repo.id)"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -45,7 +45,7 @@ const emit = defineEmits<{ open: [id: number]; refresh: [id: number] }>()
             />
           </svg>
         </button>
-        <button class="btn btn--ghost btn--sm" type="button" @click="emit('open', repo.id)">Details</button>
+        <button class="btn btn--ghost btn--sm" type="button" @click="emit('open', repo.id)">详情</button>
       </div>
     </div>
   </article>

@@ -28,7 +28,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   })
 
   if (!response.ok) {
-    let message = `Request failed (${response.status})`
+    let message = `请求失败（${response.status}）`
     try {
       const data = (await response.json()) as { detail?: unknown }
       if (typeof data?.detail === 'string') {

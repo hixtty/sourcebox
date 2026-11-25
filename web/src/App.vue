@@ -27,7 +27,7 @@ async function handleSignIn(token: string): Promise<void> {
         <rect x="2.5" y="4" width="19" height="6.2" rx="2.4" fill="currentColor" />
         <rect x="2.5" y="13.8" width="11.4" height="6.2" rx="2.4" fill="currentColor" opacity=".55" />
       </svg>
-      <p class="mono muted">Loading workspace…</p>
+      <p class="mono muted">正在加载工作台…</p>
     </div>
 
     <div v-else-if="state.offline" class="boot">
@@ -35,11 +35,11 @@ async function handleSignIn(token: string): Promise<void> {
         <rect x="2.5" y="4" width="19" height="6.2" rx="2.4" fill="currentColor" />
         <rect x="2.5" y="13.8" width="11.4" height="6.2" rx="2.4" fill="currentColor" opacity=".55" />
       </svg>
-      <h1 class="boot__title">Cannot reach SourceBox</h1>
+      <h1 class="boot__title">连不上 SourceBox</h1>
       <p class="muted boot__copy">
-        The API did not answer. Check that the container is running, then reload this page.
+        API 没有响应。请确认容器正在运行，然后重新加载本页。
       </p>
-      <button class="btn btn--primary" type="button" @click="reload">Reload</button>
+      <button class="btn btn--primary" type="button" @click="reload">重新加载</button>
     </div>
 
     <LoginView v-else-if="showLogin" @submit="handleSignIn" />
@@ -55,14 +55,14 @@ async function handleSignIn(token: string): Promise<void> {
           <span class="brand__tag mono">v{{ state.me?.version ?? '0.1.0' }}</span>
         </div>
 
-        <nav class="nav" aria-label="Sections">
+        <nav class="nav" aria-label="主导航">
           <button
             class="nav__item"
             :class="{ 'is-active': state.view === 'dashboard' }"
             type="button"
             @click="state.view = 'dashboard'"
           >
-            Overview
+            概览
           </button>
           <button
             class="nav__item"
@@ -70,7 +70,7 @@ async function handleSignIn(token: string): Promise<void> {
             type="button"
             @click="state.view = 'settings'"
           >
-            Settings
+            设置
           </button>
         </nav>
 
@@ -78,7 +78,7 @@ async function handleSignIn(token: string): Promise<void> {
           <button
             class="icon-btn"
             type="button"
-            :aria-label="state.theme === 'dark' ? 'Switch to the light theme' : 'Switch to the dark theme'"
+            :aria-label="state.theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
             @click="toggleTheme"
           >
             <svg v-if="state.theme === 'dark'" viewBox="0 0 24 24" aria-hidden="true">
@@ -95,7 +95,7 @@ async function handleSignIn(token: string): Promise<void> {
             </svg>
           </button>
           <button v-if="state.me?.authRequired" class="btn btn--ghost btn--sm" type="button" @click="signOut">
-            Sign out
+            退出登录
           </button>
         </div>
       </header>

@@ -212,18 +212,18 @@ func networkReason(err error) string {
 func ParseRepoURL(raw string) (string, string, error) {
 	text := strings.TrimSpace(raw)
 	if text == "" {
-		return "", "", fmt.Errorf("Enter a GitHub repository URL.")
+		return "", "", fmt.Errorf("请输入 GitHub 仓库地址。")
 	}
 	if !strings.Contains(text, "://") {
 		text = "https://" + text
 	}
 	parsed, err := url.Parse(text)
 	if err != nil {
-		return "", "", fmt.Errorf("That does not look like a GitHub URL.")
+		return "", "", fmt.Errorf("这看起来不是 GitHub 地址。")
 	}
 	host := strings.TrimPrefix(strings.ToLower(parsed.Hostname()), "www.")
 	if host != "github.com" {
-		return "", "", fmt.Errorf("Only github.com repository URLs are supported.")
+		return "", "", fmt.Errorf("只支持 github.com 的仓库地址。")
 	}
 
 	parts := make([]string, 0, 4)
@@ -233,12 +233,12 @@ func ParseRepoURL(raw string) (string, string, error) {
 		}
 	}
 	if len(parts) < 2 {
-		return "", "", fmt.Errorf("The URL must include both the owner and the repository.")
+		return "", "", fmt.Errorf("地址里需要同时包含作者和仓库名。")
 	}
 	owner := parts[0]
 	name := strings.TrimSuffix(parts[1], ".git")
 	if owner == "" || name == "" {
-		return "", "", fmt.Errorf("The URL must include both the owner and the repository.")
+		return "", "", fmt.Errorf("地址里需要同时包含作者和仓库名。")
 	}
 	return owner, name, nil
 }

@@ -168,7 +168,7 @@ func Recover(next http.Handler) http.Handler {
 		defer func() {
 			if recovered := recover(); recovered != nil {
 				log.Printf("panic serving %s %s: %v\n%s", r.Method, r.URL.Path, recovered, debug.Stack())
-				writeError(w, http.StatusInternalServerError, "Internal error.")
+				writeError(w, http.StatusInternalServerError, "服务器内部错误。")
 			}
 		}()
 		next.ServeHTTP(w, r)
@@ -191,11 +191,11 @@ func writeError(w http.ResponseWriter, status int, message string) {
 
 func decodeJSON(r *http.Request, out any) error {
 	if contentType := strings.ToLower(r.Header.Get("Content-Type")); !strings.HasPrefix(contentType, "application/json") {
-		return errors.New("Expected a JSON request body.")
+		return errors.New("请求体需要是 JSON。")
 	}
 	decoder := json.NewDecoder(io.LimitReader(r.Body, maxBodyBytes))
 	if err := decoder.Decode(out); err != nil {
-		return errors.New("Send a valid JSON body.")
+		return errors.New("请发送合法的 JSON 请求体。")
 	}
 	return nil
 }
@@ -229,7 +229,7 @@ func (s *Server) authed(r *http.Request) bool {
 func (s *Server) guard(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !s.authed(r) {
-			writeError(w, http.StatusUnauthorized, "Sign in to manage this source.")
+			writeError(w, http.StatusUnauthorized, "请先登录再管理这个源。")
 			return
 		}
 		next(w, r)
@@ -323,7 +323,7 @@ func (s *Server) routeAPI(w http.ResponseWriter, r *http.Request) {
 	case path == "/api/qr.svg":
 		s.guard(s.handleQR)(w, r)
 	default:
-		writeError(w, http.StatusNotFound, "Not found.")
+		writeError(w, http.StatusNotFound, "页面不存在。")
 	}
 }
 
@@ -347,7 +347,7 @@ func (s *Server) routePublic(w http.ResponseWriter, r *http.Request) {
 
 func methodNotAllowed(w http.ResponseWriter, allowed ...string) {
 	w.Header().Set("Allow", strings.Join(allowed, ", "))
-	writeError(w, http.StatusMethodNotAllowed, "Method not allowed.")
+	writeError(w, http.StatusMethodNotAllowed, "不允许该请求方法。")
 }
 
 // ------------------------------------------------------------- public
@@ -359,7 +359,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	}
 	repos, err := s.db.ListRepos()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Could not read the database.")
+		writeError(w, http.StatusInternalServerError, "读取数据库失败。")
 		return
 	}
 	kv, _ := s.db.KVAll()
@@ -389,7 +389,7 @@ func (s *Server) handleNamedSource(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/"), ".json")
 	kv, _ := s.db.KVAll()
 	if name != sourceFromDB(s.cfg, kv).Slug {
-		writeError(w, http.StatusNotFound, "Unknown source.")
+		writeError(w, http.StatusNotFound, "未知的源。")
 		return
 	}
 	s.writeSource(w)
@@ -403,7 +403,7 @@ func (s *Server) writeSource(w http.ResponseWriter) {
 
 	repos, err := s.db.ListRepos()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Could not read the database.")
+		writeError(w, http.StatusInternalServerError, "读取数据库失败。")
 		return
 	}
 	kv, _ := s.db.KVAll()
@@ -420,17 +420,17 @@ func (s *Server) writeSource(w http.ResponseWriter) {
 func (s *Server) handleRepoIcon(w http.ResponseWriter, r *http.Request) {
 	slug := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/icons/"), ".png")
 	if slug == "" || strings.Contains(slug, "/") {
-		writeError(w, http.StatusNotFound, "Unknown icon.")
+		writeError(w, http.StatusNotFound, "未知图标。")
 		return
 	}
 	repo, err := s.db.GetRepoBySlug(slug)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "Unknown icon.")
+		writeError(w, http.StatusNotFound, "未知图标。")
 		return
 	}
 	data, media := icons.RepoIcon(s.cfg, repo)
 	if data == nil {
-		writeError(w, http.StatusInternalServerError, "Could not build the icon.")
+		writeError(w, http.StatusInternalServerError, "生成图标失败。")
 		return
 	}
 	w.Header().Set("Content-Type", media)
@@ -444,7 +444,7 @@ func (s *Server) handleSourceIcon(w http.ResponseWriter, r *http.Request) {
 	view := sourceFromDB(s.cfg, kv)
 	data := icons.SourceIcon(s.cfg, view.Name, view.TintColor)
 	if data == nil {
-		writeError(w, http.StatusInternalServerError, "Could not build the icon.")
+		writeError(w, http.StatusInternalServerError, "生成图标失败。")
 		return
 	}
 	w.Header().Set("Content-Type", "image/png")
@@ -486,12 +486,12 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	key := clientKey(r)
 	if s.limiter.blocked(key) {
-		writeError(w, http.StatusTooManyRequests, "Too many attempts. Try again later.")
+		writeError(w, http.StatusTooManyRequests, "尝试次数过多，请稍后再试。")
 		return
 	}
 	if !constantTimeEqual(strings.TrimSpace(payload.Token), s.cfg.AdminToken) {
 		s.limiter.fail(key)
-		writeError(w, http.StatusUnauthorized, "That token does not match.")
+		writeError(w, http.StatusUnauthorized, "密码不正确。")
 		return
 	}
 	s.limiter.clear(key)
@@ -533,7 +533,7 @@ func (s *Server) handleOverview(w http.ResponseWriter, r *http.Request) {
 	}
 	repos, err := s.db.ListRepos()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Could not read the database.")
+		writeError(w, http.StatusInternalServerError, "读取数据库失败。")
 		return
 	}
 	kv, _ := s.db.KVAll()
@@ -569,7 +569,7 @@ func (s *Server) handleAddRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	canonical := "https://github.com/" + owner + "/" + name
 	if _, err := s.db.GetRepoByURL(canonical); err == nil {
-		writeError(w, http.StatusConflict, "That repository is already in this source.")
+		writeError(w, http.StatusConflict, "这个仓库已经在源里了。")
 		return
 	}
 
@@ -580,7 +580,7 @@ func (s *Server) handleAddRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	taken, err := s.db.TakenSlugs()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Could not read the database.")
+		writeError(w, http.StatusInternalServerError, "读取数据库失败。")
 		return
 	}
 
@@ -593,7 +593,7 @@ func (s *Server) handleAddRepo(w http.ResponseWriter, r *http.Request) {
 		TintColor:   tint,
 	})
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Could not save the repository.")
+		writeError(w, http.StatusInternalServerError, "保存仓库失败。")
 		return
 	}
 
@@ -601,7 +601,7 @@ func (s *Server) handleAddRepo(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	updated, err := refresh.RefreshRepo(ctx, s.cfg, s.db, repo, s.factory)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Saved, but the first refresh failed.")
+		writeError(w, http.StatusInternalServerError, "已保存，但首次刷新失败。")
 		return
 	}
 	writeJSON(w, http.StatusCreated, repoToView(s.cfg, updated))
@@ -610,32 +610,32 @@ func (s *Server) handleAddRepo(w http.ResponseWriter, r *http.Request) {
 // handleRepoByID covers GET / PATCH / DELETE /api/repos/{id} and POST .../refresh.
 func (s *Server) handleRepoByID(w http.ResponseWriter, r *http.Request) {
 	if !s.authed(r) {
-		writeError(w, http.StatusUnauthorized, "Sign in to manage this source.")
+		writeError(w, http.StatusUnauthorized, "请先登录再管理这个源。")
 		return
 	}
 
 	rest := strings.TrimPrefix(r.URL.Path, "/api/repos/")
 	parts := strings.Split(strings.Trim(rest, "/"), "/")
 	if len(parts) == 0 || parts[0] == "" {
-		writeError(w, http.StatusNotFound, "Repository not found.")
+		writeError(w, http.StatusNotFound, "仓库不存在。")
 		return
 	}
 	id, err := strconv.ParseInt(parts[0], 10, 64)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "Repository not found.")
+		writeError(w, http.StatusNotFound, "仓库不存在。")
 		return
 	}
 
 	if len(parts) == 2 {
 		if parts[1] != "refresh" || r.Method != http.MethodPost {
-			writeError(w, http.StatusNotFound, "Not found.")
+			writeError(w, http.StatusNotFound, "页面不存在。")
 			return
 		}
 		s.handleRefreshOne(w, r, id)
 		return
 	}
 	if len(parts) > 1 {
-		writeError(w, http.StatusNotFound, "Not found.")
+		writeError(w, http.StatusNotFound, "页面不存在。")
 		return
 	}
 
@@ -654,7 +654,7 @@ func (s *Server) handleRepoByID(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleRepoDetail(w http.ResponseWriter, id int64) {
 	repo, err := s.db.GetRepo(id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "Repository not found.")
+		writeError(w, http.StatusNotFound, "仓库不存在。")
 		return
 	}
 	status := repo.Cache.Status
@@ -673,7 +673,7 @@ func (s *Server) handleRepoDetail(w http.ResponseWriter, id int64) {
 func (s *Server) handlePatchRepo(w http.ResponseWriter, r *http.Request, id int64) {
 	repo, err := s.db.GetRepo(id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "Repository not found.")
+		writeError(w, http.StatusNotFound, "仓库不存在。")
 		return
 	}
 
@@ -710,19 +710,19 @@ func (s *Server) handlePatchRepo(w http.ResponseWriter, r *http.Request, id int6
 
 	if len(fields) > 0 {
 		if err := s.db.UpdateRepo(id, fields); err != nil {
-			writeError(w, http.StatusInternalServerError, "Could not save the changes.")
+			writeError(w, http.StatusInternalServerError, "保存修改失败。")
 			return
 		}
 		updated, err := s.db.GetRepo(id)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "Could not read the repository.")
+			writeError(w, http.StatusInternalServerError, "读取仓库失败。")
 			return
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 		defer cancel()
 		updated, err = refresh.RefreshRepo(ctx, s.cfg, s.db, updated, s.factory)
 		if err != nil {
-			writeError(w, http.StatusInternalServerError, "Saved, but the refresh failed.")
+			writeError(w, http.StatusInternalServerError, "已保存，但刷新失败。")
 			return
 		}
 		writeJSON(w, http.StatusOK, repoToView(s.cfg, updated))
@@ -735,11 +735,11 @@ func (s *Server) handlePatchRepo(w http.ResponseWriter, r *http.Request, id int6
 func (s *Server) handleDeleteRepo(w http.ResponseWriter, id int64) {
 	repo, err := s.db.GetRepo(id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "Repository not found.")
+		writeError(w, http.StatusNotFound, "仓库不存在。")
 		return
 	}
 	if err := s.db.DeleteRepo(id); err != nil {
-		writeError(w, http.StatusInternalServerError, "Could not delete the repository.")
+		writeError(w, http.StatusInternalServerError, "删除仓库失败。")
 		return
 	}
 	icons.DropIcon(s.cfg, repo.Slug)
@@ -749,14 +749,14 @@ func (s *Server) handleDeleteRepo(w http.ResponseWriter, id int64) {
 func (s *Server) handleRefreshOne(w http.ResponseWriter, r *http.Request, id int64) {
 	repo, err := s.db.GetRepo(id)
 	if err != nil {
-		writeError(w, http.StatusNotFound, "Repository not found.")
+		writeError(w, http.StatusNotFound, "仓库不存在。")
 		return
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 	defer cancel()
 	updated, err := refresh.RefreshRepo(ctx, s.cfg, s.db, repo, s.factory)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Refresh failed.")
+		writeError(w, http.StatusInternalServerError, "刷新失败。")
 		return
 	}
 	writeJSON(w, http.StatusOK, repoToView(s.cfg, updated))
@@ -769,7 +769,7 @@ func (s *Server) handleRefreshAll(w http.ResponseWriter, r *http.Request) {
 
 	repos, err := s.db.ListRepos()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Could not read the database.")
+		writeError(w, http.StatusInternalServerError, "读取数据库失败。")
 		return
 	}
 	views := make([]repoView, 0, len(repos))
@@ -789,7 +789,7 @@ func (s *Server) handleReorder(w http.ResponseWriter, r *http.Request) {
 	}
 	repos, err := s.db.ListRepos()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Could not read the database.")
+		writeError(w, http.StatusInternalServerError, "读取数据库失败。")
 		return
 	}
 	known := make(map[int64]bool, len(repos))
@@ -798,12 +798,12 @@ func (s *Server) handleReorder(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, id := range payload.IDs {
 		if !known[id] {
-			writeError(w, http.StatusBadRequest, "Unknown repository id in the new order.")
+			writeError(w, http.StatusBadRequest, "新顺序里包含未知的仓库 ID。")
 			return
 		}
 	}
 	if err := s.db.Reorder(payload.IDs); err != nil {
-		writeError(w, http.StatusInternalServerError, "Could not save the new order.")
+		writeError(w, http.StatusInternalServerError, "保存新顺序失败。")
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
@@ -814,7 +814,7 @@ func (s *Server) handleReorder(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleSourceConfig(w http.ResponseWriter, r *http.Request) {
 	kv, err := s.db.KVAll()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Could not read the database.")
+		writeError(w, http.StatusInternalServerError, "读取数据库失败。")
 		return
 	}
 
@@ -853,7 +853,7 @@ func (s *Server) handleSourceConfig(w http.ResponseWriter, r *http.Request) {
 		}
 		for key, value := range updates {
 			if err := s.db.KVSet(key, value); err != nil {
-				writeError(w, http.StatusInternalServerError, "Could not save the settings.")
+				writeError(w, http.StatusInternalServerError, "保存设置失败。")
 				return
 			}
 		}
@@ -872,7 +872,7 @@ func (s *Server) handlePreview(w http.ResponseWriter, r *http.Request) {
 	}
 	repos, err := s.db.ListRepos()
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "Could not read the database.")
+		writeError(w, http.StatusInternalServerError, "读取数据库失败。")
 		return
 	}
 	kv, _ := s.db.KVAll()
@@ -886,12 +886,12 @@ func (s *Server) handleQR(w http.ResponseWriter, r *http.Request) {
 	}
 	payload := r.URL.Query().Get("data")
 	if payload == "" || len(payload) > 2048 {
-		writeError(w, http.StatusBadRequest, "Provide a data value under 2048 characters.")
+		writeError(w, http.StatusBadRequest, "数据值不能超过 2048 个字符。")
 		return
 	}
 	svg, err := icons.QRSVG(payload)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "Could not encode that value.")
+		writeError(w, http.StatusBadRequest, "该值编码失败。")
 		return
 	}
 	w.Header().Set("Content-Type", "image/svg+xml")

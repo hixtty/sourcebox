@@ -27,12 +27,12 @@ function submit(): void {
       </div>
 
       <div class="login__copy">
-        <h1>Unlock the workspace</h1>
-        <p class="muted">Enter the admin token you set as <code class="inline">ADMIN_TOKEN</code> on the server.</p>
+        <h1>解锁工作台</h1>
+        <p class="muted">输入服务器上设置的 <code class="inline">ADMIN_TOKEN</code> 管理密码。</p>
       </div>
 
       <label class="field">
-        <span>Admin token</span>
+        <span>管理密码</span>
         <input
           v-model="token"
           class="input"
@@ -44,10 +44,10 @@ function submit(): void {
       </label>
 
       <button class="btn btn--primary" type="submit" :disabled="state.signingIn || !token.trim()">
-        {{ state.signingIn ? 'Checking…' : 'Continue' }}
+        {{ state.signingIn ? '校验中…' : '继续' }}
       </button>
 
-      <p class="login__hint">Sessions last 30 days on this browser.</p>
+      <p class="login__hint">登录状态会在这个浏览器里保留 30 天。</p>
     </form>
   </div>
 </template>

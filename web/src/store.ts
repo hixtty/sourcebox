@@ -55,7 +55,7 @@ export async function loadOverview(silent = false): Promise<void> {
       return
     }
     if (!silent) {
-      pushToast(error instanceof Error ? error.message : 'Could not load the workspace.', 'error')
+      pushToast(error instanceof Error ? error.message : '无法加载工作台。', 'error')
     }
   }
 }
@@ -70,7 +70,7 @@ export async function init(): Promise<void> {
     }
   } catch (error) {
     state.offline = true
-    pushToast(error instanceof Error ? error.message : 'Could not reach the server.', 'error')
+    pushToast(error instanceof Error ? error.message : '无法连接服务器。', 'error')
   } finally {
     state.booting = false
   }
@@ -86,7 +86,7 @@ export async function signIn(token: string): Promise<boolean> {
     }
     return state.me?.authed ?? false
   } catch (error) {
-    pushToast(error instanceof Error ? error.message : 'Sign in failed.', 'error')
+    pushToast(error instanceof Error ? error.message : '登录失败。', 'error')
     return false
   } finally {
     state.signingIn = false
