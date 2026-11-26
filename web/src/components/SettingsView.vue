@@ -85,7 +85,7 @@ async function copy(): Promise<void> {
 
     <template v-else>
       <div class="settings-grid">
-        <section class="panel">
+        <section class="panel panel--identity">
           <header class="panel__head">
             <h2>源信息</h2>
             <p class="muted">会在 SideStore 和 AltStore 的源顶部显示。</p>
@@ -129,7 +129,7 @@ async function copy(): Promise<void> {
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel panel--desc">
           <header class="panel__head">
             <h2>描述</h2>
             <p class="muted">纯文本，客户端不会渲染 Markdown。</p>
@@ -143,11 +143,12 @@ async function copy(): Promise<void> {
             <label class="field">
               <span>描述</span>
               <textarea v-model="form.description" class="input textarea" rows="4"></textarea>
+              <small class="field__hint">这一行会作为源的简介显示在客户端里。</small>
             </label>
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel panel--endpoint">
           <header class="panel__head">
             <h2>源地址</h2>
             <p class="muted">填到 SideStore 或 AltStore 里的就是这一条。</p>
@@ -159,9 +160,20 @@ async function copy(): Promise<void> {
               {{ copied ? '已复制' : '复制' }}
             </button>
           </div>
+          <p class="muted panel__note">
+            客户端会按自己的节奏缓存这个 JSON，改完设置不必手动通知它们。
+          </p>
+          <div class="steps">
+            <p class="steps__title">在客户端里添加</p>
+            <ol>
+              <li>复制上面的地址</li>
+              <li>打开 SideStore，进入 Sources</li>
+              <li>点右上角 +，粘贴地址后确认</li>
+            </ol>
+          </div>
         </section>
 
-        <section class="panel">
+        <section class="panel panel--env">
           <header class="panel__head">
             <h2>服务器环境</h2>
             <p class="muted">这些值来自容器环境变量。</p>
