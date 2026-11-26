@@ -49,5 +49,5 @@ sudo docker exec sourcebox ./sourcebox -print-admin-path
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/health      # 200
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/            # 404
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8080/api/repos   # 404
-curl -s https://asst.qzz.io/source.json | head -c 200
+curl -s "https://asst.qzz.io/<ADMIN_PATH>/source.json" | head -c 200
 ```

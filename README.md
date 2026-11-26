@@ -17,11 +17,11 @@ cp .env.example .env      # 按需填写 BASE_URL / ADMIN_TOKEN / GITHUB_TOKEN
 docker compose up -d --build
 ```
 
-打开 `http://localhost:8080/`：
+容器起来后看日志里的后台地址（形如 `http://localhost:8080/p-8hhkntcjt4scm68a/`）：
 
-1. 点 **Add repository**，粘贴形如 `https://github.com/owner/repo` 的地址
+1. 点 **添加仓库**，粘贴形如 `https://github.com/owner/repo` 的地址
 2. SourceBox 会立刻拉取最新 Release，并显示是否命中 `.ipa`
-3. 把票券里的地址（如 `http://localhost:8080/source.json`）加到 SideStore / AltStore
+3. 把票券里的地址（如 `http://localhost:8080/p-8hhkntcjt4scm68a/source.json`）加到 SideStore / AltStore
 
 ## 环境变量
 
@@ -35,11 +35,11 @@ docker compose up -d --build
 | `DATA_DIR` | `./data` | SQLite 与图标缓存目录 |
 | `PORT` | `8080` | 监听端口 |
 
-> 公开的只有 `/source.json`、`/<slug>.json`、`/icons/*`、`/source-icon.png`、`/health`。根路径 `/` 和 `/api/*` 一律 404，后台与后台 API 只存在于 `/<ADMIN_PATH>/` 下面。
+> 源的 JSON、图标和后台页面共用同一段随机路径：`/<ADMIN_PATH>/source.json`、`/<ADMIN_PATH>/<slug>.json`、`/<ADMIN_PATH>/icons/*`、`/<ADMIN_PATH>/source-icon.png`。根路径 `/`、`/source.json`、`/api/*`、`/icons/*` 一律 404，未认证的只有 `/health`（不含任何地址信息）。
 
 ## 安全性
 
-**后台入口是随机路径。** 首次启动会生成 `p-` + 16 位随机字符并存进数据库，例如 `https://store.example.com/p-8hhkntcjt4scm68a/`。`/`、`/api/*` 全部返回 404，扫描器拿不到登录页。路径可用 `ADMIN_PATH` 固定，或用下面的命令取回：
+**后台和源都在同一段随机路径下。** 首次启动会生成 `p-` + 16 位随机字符并存进数据库，例如 `https://store.example.com/p-8hhkntcjt4scm68a/`；源地址则是 `https://store.example.com/p-8hhkntcjt4scm68a/source.json`。`/`、`/source.json`、`/api/*`、`/icons/*` 全部返回 404，扫描器既拿不到登录页，也拿不到源。路径可用 `ADMIN_PATH` 固定，或用下面的命令取回：
 
 ```bash
 ./sourcebox -print-admin-path
@@ -101,9 +101,9 @@ web                         Vue 3 + TS 前端
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET | `/source.json` | 生成的 AltStore 源（公开） |
-| GET | `/<slug>.json` | 同上的别名（公开） |
-| GET | `/icons/{slug}.png` | 仓库图标（公开，代理 + 缓存） |
+| GET | `/<ADMIN_PATH>/source.json` | 生成的 AltStore 源（公开） |
+| GET | `/<ADMIN_PATH>/<slug>.json` | 同上的别名（公开） |
+| GET | `/<ADMIN_PATH>/icons/{slug}.png` | 仓库图标（公开，代理 + 缓存） |
 | GET | `/health` | 健康检查（公开） |
 | GET | `/api/me` | 登录状态 |
 | POST | `/api/login` / `/api/logout` | 管理员会话 |

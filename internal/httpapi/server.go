@@ -70,6 +70,25 @@ func (s *Server) AdminURL() string {
 	return s.cfg.BaseURL + "/" + s.adminPath + "/"
 }
 
+// SourceURL is the public endpoint handed to AltStore and SideStore clients.
+func (s *Server) SourceURL() string {
+	return s.sourceBase() + "/source.json"
+}
+
+// sourceBase is the public prefix shared by the dashboard and the source
+// document: /<adminPath>.
+func (s *Server) sourceBase() string {
+	return s.cfg.BaseURL + "/" + s.adminPath
+}
+
+// refreshConfig points the icon builder at the public prefix, so cached app
+// entries carry the same random segment as the source document.
+func (s *Server) refreshConfig() config.Config {
+	cfg := s.cfg
+	cfg.BaseURL = s.sourceBase()
+	return cfg
+}
+
 func (s *Server) resolveAdminPath() {
 	if candidate := normalizeAdminPath(s.cfg.AdminPath); candidate != "" && !reservedPaths[candidate] {
 		s.adminPath = candidate
@@ -262,6 +281,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			s.routeAPI(w, cloneWithPath(r, rest))
 		case rest == "/runtime-config.js":
 			s.handleRuntimeConfig(w, r)
+		case rest == "/source.json":
+			s.handleSource(w, r)
+		case rest == "/source-icon.png":
+			s.handleSourceIcon(w, r)
+		case strings.HasPrefix(rest, "/icons/") && strings.HasSuffix(rest, ".png"):
+			s.handleRepoIcon(w, cloneWithPath(r, rest))
+		case strings.HasSuffix(rest, ".json"):
+			s.handleNamedSource(w, cloneWithPath(r, rest))
 		default:
 			s.serveWebFile(w, r, rest)
 		}
@@ -327,19 +354,12 @@ func (s *Server) routeAPI(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// routePublic serves only what AltStore clients need.
+// routePublic keeps a single unauthenticated liveness probe. Everything a
+// client needs lives behind the random source path.
 func (s *Server) routePublic(w http.ResponseWriter, r *http.Request) {
-	switch path := r.URL.Path; {
-	case path == "/health":
+	switch r.URL.Path {
+	case "/health":
 		s.handleHealth(w, r)
-	case path == "/source.json":
-		s.handleSource(w, r)
-	case path == "/source-icon.png":
-		s.handleSourceIcon(w, r)
-	case strings.HasPrefix(path, "/icons/") && strings.HasSuffix(path, ".png"):
-		s.handleRepoIcon(w, r)
-	case strings.HasSuffix(path, ".json"):
-		s.handleNamedSource(w, r)
 	default:
 		http.NotFound(w, r)
 	}
@@ -362,13 +382,13 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "读取数据库失败。")
 		return
 	}
-	kv, _ := s.db.KVAll()
+	// /health stays unauthenticated, so it must not echo the random segment
+	// that guards both the dashboard and the source document.
 	writeJSON(w, http.StatusOK, map[string]any{
 		"ok":           true,
 		"version":      Version,
 		"repositories": len(repos),
 		"apps":         statsFromRepos(repos).Apps,
-		"source":       sourceFromDB(s.cfg, kv).URL,
 		"time":         time.Now().UTC().Format("2006-01-02T15:04:05Z"),
 	})
 }
@@ -388,7 +408,7 @@ func (s *Server) handleNamedSource(w http.ResponseWriter, r *http.Request) {
 	}
 	name := strings.TrimSuffix(strings.TrimPrefix(r.URL.Path, "/"), ".json")
 	kv, _ := s.db.KVAll()
-	if name != sourceFromDB(s.cfg, kv).Slug {
+	if name != sourceFromDB(s.cfg, s.adminPath, kv).Slug {
 		writeError(w, http.StatusNotFound, "未知的源。")
 		return
 	}
@@ -399,7 +419,7 @@ func (s *Server) writeSource(w http.ResponseWriter) {
 	ttl := s.ttl()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	refresh.EnsureFresh(ctx, s.cfg, s.db, ttl, false, s.factory)
+	refresh.EnsureFresh(ctx, s.refreshConfig(), s.db, ttl, false, s.factory)
 
 	repos, err := s.db.ListRepos()
 	if err != nil {
@@ -407,7 +427,7 @@ func (s *Server) writeSource(w http.ResponseWriter) {
 		return
 	}
 	kv, _ := s.db.KVAll()
-	document := buildDocument(s.cfg, kv, repos)
+	document := buildDocument(s.cfg, s.adminPath, kv, repos)
 
 	maxAge := int(min(ttl.Seconds(), 600))
 	if maxAge < 0 {
@@ -441,7 +461,7 @@ func (s *Server) handleRepoIcon(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleSourceIcon(w http.ResponseWriter, r *http.Request) {
 	kv, _ := s.db.KVAll()
-	view := sourceFromDB(s.cfg, kv)
+	view := sourceFromDB(s.cfg, s.adminPath, kv)
 	data := icons.SourceIcon(s.cfg, view.Name, view.TintColor)
 	if data == nil {
 		writeError(w, http.StatusInternalServerError, "生成图标失败。")
@@ -539,12 +559,12 @@ func (s *Server) handleOverview(w http.ResponseWriter, r *http.Request) {
 	kv, _ := s.db.KVAll()
 	views := make([]repoView, 0, len(repos))
 	for _, repo := range repos {
-		views = append(views, repoToView(s.cfg, repo))
+		views = append(views, repoToView(s.cfg, s.adminPath, repo))
 	}
 	writeJSON(w, http.StatusOK, overviewView{
 		BaseURL:               s.cfg.BaseURL,
 		AdminPath:             "/" + s.adminPath + "/",
-		Source:                sourceFromDB(s.cfg, kv),
+		Source:                sourceFromDB(s.cfg, s.adminPath, kv),
 		Stats:                 statsFromRepos(repos),
 		Repos:                 views,
 		AuthRequired:          s.cfg.AdminToken != "",
@@ -599,12 +619,12 @@ func (s *Server) handleAddRepo(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 	defer cancel()
-	updated, err := refresh.RefreshRepo(ctx, s.cfg, s.db, repo, s.factory)
+	updated, err := refresh.RefreshRepo(ctx, s.refreshConfig(), s.db, repo, s.factory)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "已保存，但首次刷新失败。")
 		return
 	}
-	writeJSON(w, http.StatusCreated, repoToView(s.cfg, updated))
+	writeJSON(w, http.StatusCreated, repoToView(s.cfg, s.adminPath, updated))
 }
 
 // handleRepoByID covers GET / PATCH / DELETE /api/repos/{id} and POST .../refresh.
@@ -662,7 +682,7 @@ func (s *Server) handleRepoDetail(w http.ResponseWriter, id int64) {
 		status = refresh.StatusPending
 	}
 	writeJSON(w, http.StatusOK, detailView{
-		Repo:    repoToView(s.cfg, repo),
+		Repo:    repoToView(s.cfg, s.adminPath, repo),
 		Apps:    repo.Cache.Apps,
 		Release: repo.Cache.Release,
 		Error:   nonEmpty(repo.Cache.Error),
@@ -720,16 +740,16 @@ func (s *Server) handlePatchRepo(w http.ResponseWriter, r *http.Request, id int6
 		}
 		ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 		defer cancel()
-		updated, err = refresh.RefreshRepo(ctx, s.cfg, s.db, updated, s.factory)
+		updated, err = refresh.RefreshRepo(ctx, s.refreshConfig(), s.db, updated, s.factory)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, "已保存，但刷新失败。")
 			return
 		}
-		writeJSON(w, http.StatusOK, repoToView(s.cfg, updated))
+		writeJSON(w, http.StatusOK, repoToView(s.cfg, s.adminPath, updated))
 		return
 	}
 
-	writeJSON(w, http.StatusOK, repoToView(s.cfg, repo))
+	writeJSON(w, http.StatusOK, repoToView(s.cfg, s.adminPath, repo))
 }
 
 func (s *Server) handleDeleteRepo(w http.ResponseWriter, id int64) {
@@ -754,18 +774,18 @@ func (s *Server) handleRefreshOne(w http.ResponseWriter, r *http.Request, id int
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
 	defer cancel()
-	updated, err := refresh.RefreshRepo(ctx, s.cfg, s.db, repo, s.factory)
+	updated, err := refresh.RefreshRepo(ctx, s.refreshConfig(), s.db, repo, s.factory)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "刷新失败。")
 		return
 	}
-	writeJSON(w, http.StatusOK, repoToView(s.cfg, updated))
+	writeJSON(w, http.StatusOK, repoToView(s.cfg, s.adminPath, updated))
 }
 
 func (s *Server) handleRefreshAll(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
-	count := refresh.EnsureFresh(ctx, s.cfg, s.db, s.ttl(), true, s.factory)
+	count := refresh.EnsureFresh(ctx, s.refreshConfig(), s.db, s.ttl(), true, s.factory)
 
 	repos, err := s.db.ListRepos()
 	if err != nil {
@@ -774,7 +794,7 @@ func (s *Server) handleRefreshAll(w http.ResponseWriter, r *http.Request) {
 	}
 	views := make([]repoView, 0, len(repos))
 	for _, repo := range repos {
-		views = append(views, repoToView(s.cfg, repo))
+		views = append(views, repoToView(s.cfg, s.adminPath, repo))
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"refreshed": count, "repos": views})
 }
@@ -820,7 +840,7 @@ func (s *Server) handleSourceConfig(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case http.MethodGet:
-		writeJSON(w, http.StatusOK, sourceFromDB(s.cfg, kv))
+		writeJSON(w, http.StatusOK, sourceFromDB(s.cfg, s.adminPath, kv))
 	case http.MethodPut:
 		var payload struct {
 			Name         string `json:"name"`
@@ -859,7 +879,7 @@ func (s *Server) handleSourceConfig(w http.ResponseWriter, r *http.Request) {
 		}
 		icons.DropIcon(s.cfg, "_source")
 		refreshed, _ := s.db.KVAll()
-		writeJSON(w, http.StatusOK, sourceFromDB(s.cfg, refreshed))
+		writeJSON(w, http.StatusOK, sourceFromDB(s.cfg, s.adminPath, refreshed))
 	default:
 		methodNotAllowed(w, http.MethodGet, http.MethodPut)
 	}
@@ -876,7 +896,7 @@ func (s *Server) handlePreview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	kv, _ := s.db.KVAll()
-	writeJSON(w, http.StatusOK, buildDocument(s.cfg, kv, repos))
+	writeJSON(w, http.StatusOK, buildDocument(s.cfg, s.adminPath, kv, repos))
 }
 
 func (s *Server) handleQR(w http.ResponseWriter, r *http.Request) {

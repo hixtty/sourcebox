@@ -11,8 +11,6 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': { target: proxyTarget, rewrite: (path) => `${apiBase}${path}` },
-      '/icons': proxyTarget,
-      '/source.json': proxyTarget,
       '/health': proxyTarget,
     },
   },

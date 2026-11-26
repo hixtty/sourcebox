@@ -111,7 +111,7 @@ func TestAddRepositoryBuildsSource(t *testing.T) {
 		t.Fatalf("tint = %q", added.TintColor)
 	}
 
-	sourceResponse := do(t, server, http.MethodGet, "/source.json", nil, nil)
+	sourceResponse := do(t, server, http.MethodGet, "/control/source.json", nil, nil)
 	if sourceResponse.Code != http.StatusOK {
 		t.Fatalf("source status = %d", sourceResponse.Code)
 	}
@@ -170,7 +170,7 @@ func TestReleaseWithoutIPAShowsErrorEntry(t *testing.T) {
 			Name string `json:"name"`
 		} `json:"errors"`
 	}
-	response := do(t, server, http.MethodGet, "/source.json", nil, nil)
+	response := do(t, server, http.MethodGet, "/control/source.json", nil, nil)
 	if err := json.Unmarshal(response.Body.Bytes(), &document); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
@@ -228,13 +228,13 @@ func TestSourceSettingsRoundTrip(t *testing.T) {
 	if view.Slug != "shelf" || view.TintColor != "#AABBCC" {
 		t.Fatalf("view = %+v", view)
 	}
-	if view.URL != "http://testserver/shelf.json" {
+	if view.URL != "http://testserver/control/shelf.json" {
 		t.Fatalf("url = %q", view.URL)
 	}
-	if code := do(t, server, http.MethodGet, "/shelf.json", nil, nil).Code; code != http.StatusOK {
+	if code := do(t, server, http.MethodGet, "/control/shelf.json", nil, nil).Code; code != http.StatusOK {
 		t.Fatalf("named source status = %d", code)
 	}
-	if code := do(t, server, http.MethodGet, "/missing.json", nil, nil).Code; code != http.StatusNotFound {
+	if code := do(t, server, http.MethodGet, "/control/missing.json", nil, nil).Code; code != http.StatusNotFound {
 		t.Fatalf("missing source status = %d", code)
 	}
 }
@@ -273,8 +273,17 @@ func TestDashboardIsHiddenBehindTheSecretPath(t *testing.T) {
 	if code := raw("/api/overview"); code != http.StatusNotFound {
 		t.Fatalf("unprefixed api status = %d, want 404", code)
 	}
+	if code := raw("/source.json"); code != http.StatusNotFound {
+		t.Fatalf("unprefixed source status = %d, want 404", code)
+	}
+	if code := raw("/icons/demo.png"); code != http.StatusNotFound {
+		t.Fatalf("unprefixed icon status = %d, want 404", code)
+	}
 	if code := raw("/control/api/overview"); code != http.StatusOK {
 		t.Fatalf("prefixed api status = %d, want 200", code)
+	}
+	if code := raw("/control/source.json"); code != http.StatusOK {
+		t.Fatalf("prefixed source status = %d, want 200", code)
 	}
 
 	request := httptest.NewRequest(http.MethodGet, "/control/runtime-config.js", nil)

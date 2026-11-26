@@ -91,8 +91,9 @@ func nonEmpty(value string) *string {
 	return &value
 }
 
-// sourceFromDB merges defaults, environment and stored overrides.
-func sourceFromDB(cfg config.Config, kv map[string]string) sourceView {
+// sourceFromDB merges defaults, environment and stored overrides. publicPath is
+// the random segment in front of both the dashboard and the source document.
+func sourceFromDB(cfg config.Config, publicPath string, kv map[string]string) sourceView {
 	value := func(key, fallback string) string {
 		if stored := kv[key]; stored != "" {
 			return stored
@@ -118,11 +119,11 @@ func sourceFromDB(cfg config.Config, kv map[string]string) sourceView {
 		Description:  value("source_description", "由 GitHub Release 的 .ipa 文件生成的 AltStore / SideStore 源。"),
 		TintColor:    value("source_tint", config.DefaultTint),
 		CacheSeconds: cacheSeconds,
-		URL:          cfg.BaseURL + "/" + slug + ".json",
+		URL:          cfg.BaseURL + "/" + publicPath + "/" + slug + ".json",
 	}
 }
 
-func repoToView(cfg config.Config, repo store.Repo) repoView {
+func repoToView(cfg config.Config, publicPath string, repo store.Repo) repoView {
 	cache := repo.Cache
 	status := cache.Status
 	if status == "" {
@@ -138,7 +139,7 @@ func repoToView(cfg config.Config, repo store.Repo) repoView {
 		DisplayName: repo.DisplayName,
 		TintColor:   repo.TintColor,
 		IconURL:     nonEmpty(repo.IconURL),
-		IconSrc:     cfg.BaseURL + "/icons/" + repo.Slug + ".png",
+		IconSrc:     cfg.BaseURL + "/" + publicPath + "/icons/" + repo.Slug + ".png",
 		Status:      status,
 		StatusLabel: statusLabels[status],
 		Error:       nonEmpty(cache.Error),
@@ -183,20 +184,26 @@ func statsFromRepos(repos []store.Repo) statsView {
 }
 
 // buildDocument assembles the public AltStore source JSON.
-func buildDocument(cfg config.Config, kv map[string]string, repos []store.Repo) source.Document {
-	configView := sourceFromDB(cfg, kv)
+func buildDocument(cfg config.Config, publicPath string, kv map[string]string, repos []store.Repo) source.Document {
+	configView := sourceFromDB(cfg, publicPath, kv)
+	assetBase := cfg.BaseURL + "/" + publicPath
 	document := source.Document{
 		Name:        configView.Name,
 		Subtitle:    configView.Subtitle,
 		Description: configView.Description,
-		IconURL:     cfg.BaseURL + "/source-icon.png",
+		IconURL:     assetBase + "/source-icon.png",
 		TintColor:   configView.TintColor,
 		Apps:        []store.App{},
 	}
 	for _, repo := range repos {
 		switch repo.Cache.Status {
 		case refresh.StatusOK:
-			document.Apps = append(document.Apps, repo.Cache.Apps...)
+			for _, app := range repo.Cache.Apps {
+				// Cached entries may predate the random prefix, so rebuild the
+				// icon URL from the current one on every render.
+				app.IconURL = assetBase + "/icons/" + repo.Slug + ".png"
+				document.Apps = append(document.Apps, app)
+			}
 		case refresh.StatusError, refresh.StatusNoIPA, refresh.StatusNoRelease:
 			message := repo.Cache.Error
 			if message == "" {

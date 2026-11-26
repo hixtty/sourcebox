@@ -50,7 +50,7 @@ func main() {
 
 	go func() {
 		log.Printf("SourceBox %s listening on http://%s", httpapi.Version, cfg.Addr())
-		log.Printf("source endpoint: %s/source.json", cfg.BaseURL)
+		log.Printf("source endpoint: %s", handler.SourceURL())
 		log.Printf("admin dashboard:  %s", handler.AdminURL())
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("listen: %v", err)

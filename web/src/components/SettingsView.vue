@@ -102,7 +102,8 @@ async function copy(): Promise<void> {
               <input v-model="form.slug" class="input" type="text" />
               <small class="field__hint">
                 文件名里 <span class="mono">/</span> 后面的部分。填 <span class="mono">source</span> 时
-                <span class="mono">/source.json</span> 与 <span class="mono">/{{ form.slug }}.json</span> 都可用。
+                <span class="mono">source.json</span> 与 <span class="mono">{{ form.slug }}.json</span>
+                都挂在同一个随机路径下。
               </small>
             </label>
 
